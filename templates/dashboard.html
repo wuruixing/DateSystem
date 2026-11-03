@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>监控面板 - 日期提醒系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="/static/css/style.css" rel="stylesheet">
+</head>
+<body>
+    <!-- 导航 -->
+    <nav class="app-nav">
+        <div class="container">
+            <div class="nav-content">
+                <div class="nav-brand">
+                    <i class="bi bi-calendar-heart"></i>
+                    <span>日期提醒系统</span>
+                </div>
+                <div class="nav-links">
+                    <a href="/" class="nav-link"><i class="bi bi-list-check"></i> 提醒管理</a>
+                    <a href="/dashboard" class="nav-link active"><i class="bi bi-speedometer2"></i> 监控面板</a>
+                    <button class="btn-config" onclick="testWechat()">
+                        <i class="bi bi-send"></i> 测试
+                    </button>
+                    <button class="btn-config" onclick="openConfigModal()">
+                        <i class="bi bi-gear"></i> 配置
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container">
+        <!-- 概览卡片 -->
+        <div class="dashboard-grid">
+            <div class="dash-card dash-card-red">
+                <div class="dash-icon"><i class="bi bi-exclamation-triangle"></i></div>
+                <div class="dash-info">
+                    <div class="dash-value" id="todayDue">0</div>
+                    <div class="dash-label">今日到期</div>
+                </div>
+            </div>
+            <div class="dash-card dash-card-orange">
+                <div class="dash-icon"><i class="bi bi-calendar-week"></i></div>
+                <div class="dash-info">
+                    <div class="dash-value" id="weekDue">0</div>
+                    <div class="dash-label">本周到期</div>
+                </div>
+            </div>
+            <div class="dash-card dash-card-blue">
+                <div class="dash-icon"><i class="bi bi-calendar-month"></i></div>
+                <div class="dash-info">
+                    <div class="dash-value" id="monthDue">0</div>
+                    <div class="dash-label">本月到期</div>
+                </div>
+            </div>
+            <div class="dash-card dash-card-gray">
+                <div class="dash-icon"><i class="bi bi-clock-history"></i></div>
+                <div class="dash-info">
+                    <div class="dash-value" id="overdue">0</div>
+                    <div class="dash-label">已过期</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 项目统计 -->
+        <div class="section">
+            <h2 class="section-title"><i class="bi bi-folder2-open"></i> 项目统计</h2>
+            <div class="project-stats-grid" id="projectStats">
+            </div>
+        </div>
+
+        <!-- 即将到期 & 最近日志 -->
+        <div class="dashboard-two-col">
+            <div class="section">
+                <h2 class="section-title"><i class="bi bi-hourglass-split"></i> 即将到期（7天内）</h2>
+                <div class="upcoming-list" id="upcomingList">
+                </div>
+            </div>
+            <div class="section">
+                <h2 class="section-title"><i class="bi bi-send-fill"></i> 最近发送记录</h2>
+                <div class="recent-logs" id="recentLogs">
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 配置弹窗 -->
+    <div class="modal fade" id="configModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-gear"></i> 企业微信配置</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Webhook 地址</label>
+                        <input type="text" class="form-control" id="webhookUrl" placeholder="https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxx">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-cancel" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn-test" onclick="testWechat()"><i class="bi bi-send"></i> 测试</button>
+                    <button type="button" class="btn-save" onclick="saveConfig()">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div id="toast" class="toast"><div class="toast-body" id="toastBody"></div></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/dashboard.js"></script>
+</body>
+</html>

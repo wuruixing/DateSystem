@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>日期提醒系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="/static/css/style.css" rel="stylesheet">
+</head>
+<body>
+    <!-- 导航 -->
+    <nav class="app-nav">
+        <div class="container">
+            <div class="nav-content">
+                <div class="nav-brand">
+                    <i class="bi bi-calendar-heart"></i>
+                    <span>日期提醒系统</span>
+                </div>
+                <div class="nav-links">
+                    <button class="btn-config" onclick="testWechat()">
+                        <i class="bi bi-send"></i> 测试
+                    </button>
+                    <button class="btn-config" onclick="openConfigModal()">
+                        <i class="bi bi-gear"></i> 配置
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container">
+        <!-- 监控概览 -->
+        <div class="dashboard-grid">
+            <div class="dash-card dash-card-red">
+                <div class="dash-icon"><i class="bi bi-exclamation-triangle"></i></div>
+                <div class="dash-info">
+                    <div class="dash-value" id="todayDue">0</div>
+                    <div class="dash-label">今日到期</div>
+                </div>
+            </div>
+            <div class="dash-card dash-card-orange">
+                <div class="dash-icon"><i class="bi bi-calendar-week"></i></div>
+                <div class="dash-info">
+                    <div class="dash-value" id="weekDue">0</div>
+                    <div class="dash-label">本周到期</div>
+                </div>
+            </div>
+            <div class="dash-card dash-card-blue">
+                <div class="dash-icon"><i class="bi bi-calendar-month"></i></div>
+                <div class="dash-info">
+                    <div class="dash-value" id="monthDue">0</div>
+                    <div class="dash-label">本月到期</div>
+                </div>
+            </div>
+            <div class="dash-card dash-card-gray">
+                <div class="dash-icon"><i class="bi bi-clock-history"></i></div>
+                <div class="dash-info">
+                    <div class="dash-value" id="overdue">0</div>
+                    <div class="dash-label">已过期</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 项目统计 -->
+        <div class="section">
+            <h2 class="section-title"><i class="bi bi-folder2-open"></i> 项目概览</h2>
+            <div class="project-stats-grid" id="projectStats">
+                <p style="color:var(--text-secondary);text-align:center;padding:1rem;width:100%">暂无项目</p>
+            </div>
+        </div>
+
+        <!-- 统计 -->
+        <div class="stats-bar">
+            <div class="stat-item">
+                <div class="stat-num" id="totalReminders">0</div>
+                <div class="stat-text">总提醒</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-num" id="activeReminders">0</div>
+                <div class="stat-text">活跃</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-num" id="totalLogs">0</div>
+                <div class="stat-text">已发送</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-num" id="successLogs">0</div>
+                <div class="stat-text">成功</div>
+            </div>
+        </div>
+
+        <!-- 操作栏 -->
+        <div class="toolbar">
+            <div class="search-box">
+                <i class="bi bi-search"></i>
+                <input type="text" id="searchInput" placeholder="搜索提醒...">
+            </div>
+            <div class="toolbar-actions">
+                <button class="btn-primary" onclick="openProjectModal()">
+                    <i class="bi bi-folder-plus"></i> 新建项目
+                </button>
+                <button class="btn-primary" onclick="openReminderModal()">
+                    <i class="bi bi-plus-lg"></i> 新建提醒
+                </button>
+            </div>
+        </div>
+
+        <!-- 项目筛选 -->
+        <div class="project-tabs" id="projectTabs">
+            <button class="project-tab active" onclick="filterByProject('')">全部</button>
+        </div>
+
+        <!-- 卡片列表 -->
+        <div id="reminderCards" class="cards-grid">
+            <div class="empty-state">
+                <i class="bi bi-calendar-x"></i>
+                <p>暂无提醒</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- 新建/编辑提醒弹窗 -->
+    <div class="modal fade" id="reminderModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="reminderModalTitle"><i class="bi bi-plus-circle"></i> 新建提醒</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="reminderId">
+                    <div class="form-row">
+                        <div class="form-group flex-2">
+                            <label class="form-label">标题</label>
+                            <input type="text" class="form-control" id="title" placeholder="提醒标题" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">所属项目</label>
+                            <select class="form-control" id="projectId">
+                                <option value="">未分组</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">目标日期</label>
+                        <input type="date" class="form-control" id="targetDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">提前提醒天数</label>
+                        <div class="options-grid">
+                            <label class="option-card"><input type="checkbox" value="1" class="reminder-day"><span>1天</span></label>
+                            <label class="option-card"><input type="checkbox" value="3" class="reminder-day"><span>3天</span></label>
+                            <label class="option-card"><input type="checkbox" value="7" class="reminder-day"><span>7天</span></label>
+                            <label class="option-card"><input type="checkbox" value="15" class="reminder-day"><span>15天</span></label>
+                            <label class="option-card"><input type="checkbox" value="30" class="reminder-day"><span>30天</span></label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">每天提醒时间</label>
+                        <div class="options-grid">
+                            <label class="option-card"><input type="checkbox" value="09:00" class="reminder-time"><span>09:00</span></label>
+                            <label class="option-card"><input type="checkbox" value="12:00" class="reminder-time"><span>12:00</span></label>
+                            <label class="option-card"><input type="checkbox" value="14:00" class="reminder-time"><span>14:00</span></label>
+                            <label class="option-card"><input type="checkbox" value="18:00" class="reminder-time"><span>18:00</span></label>
+                            <label class="option-card"><input type="checkbox" value="21:00" class="reminder-time"><span>21:00</span></label>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">备注</label>
+                            <textarea class="form-control" id="note" rows="2" placeholder="备注信息..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">@提醒人员</label>
+                            <input type="text" class="form-control" id="mentionList" placeholder="手机号或userid">
+                            <small class="form-hint">多个用逗号分隔</small>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="switch-label">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="isActive" checked>
+                                <label class="form-check-label" for="isActive">启用提醒</label>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-cancel" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn-save" id="saveReminder">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 项目弹窗 -->
+    <div class="modal fade" id="projectModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-folder-plus"></i> 新建项目</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">项目名称</label>
+                        <input type="text" class="form-control" id="projectName" placeholder="例如：项目A">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">项目颜色</label>
+                        <div class="color-options">
+                            <label class="color-card"><input type="radio" name="projectColor" value="#6366f1" checked><span style="background:#6366f1"></span></label>
+                            <label class="color-card"><input type="radio" name="projectColor" value="#8b5cf6"><span style="background:#8b5cf6"></span></label>
+                            <label class="color-card"><input type="radio" name="projectColor" value="#ec4899"><span style="background:#ec4899"></span></label>
+                            <label class="color-card"><input type="radio" name="projectColor" value="#f59e0b"><span style="background:#f59e0b"></span></label>
+                            <label class="color-card"><input type="radio" name="projectColor" value="#10b981"><span style="background:#10b981"></span></label>
+                            <label class="color-card"><input type="radio" name="projectColor" value="#3b82f6"><span style="background:#3b82f6"></span></label>
+                            <label class="color-card"><input type="radio" name="projectColor" value="#ef4444"><span style="background:#ef4444"></span></label>
+                            <label class="color-card"><input type="radio" name="projectColor" value="#14b8a6"><span style="background:#14b8a6"></span></label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-cancel" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn-save" onclick="saveProject()">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 日志弹窗 -->
+    <div class="modal fade" id="logsModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-clock-history"></i> 发送日志</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="logsList" class="logs-list"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 配置弹窗 -->
+    <div class="modal fade" id="configModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-gear"></i> 企业微信配置</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Webhook 地址</label>
+                        <input type="text" class="form-control" id="webhookUrl" placeholder="https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxx">
+                        <small class="form-hint">在企业微信群中添加机器人，获取 Webhook 地址</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-cancel" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn-test" onclick="testWechat()"><i class="bi bi-send"></i> 测试</button>
+                    <button type="button" class="btn-save" onclick="saveConfig()">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div id="toast" class="toast"><div class="toast-body" id="toastBody"></div></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

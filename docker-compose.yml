@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  # MySQL 数据库
+  db:
+    image: mysql:8.0
+    container_name: reminder_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root123}
+      MYSQL_DATABASE: date_reminder
+      MYSQL_CHARSET: utf8mb4
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - reminder_net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Flask 应用
+  web:
+    build: .
+    container_name: reminder_web
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      MYSQL_HOST: db
+      MYSQL_PORT: 3306
+      MYSQL_USER: root
+      MYSQL_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root123}
+      MYSQL_DATABASE: date_reminder
+      WECHAT_WEBHOOK_URL: ${WECHAT_WEBHOOK_URL:-}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - reminder_net
+    volumes:
+      - ./config_data.json:/app/config_data.json
+
+volumes:
+  mysql_data:
+
+networks:
+  reminder_net:
+    driver: bridge

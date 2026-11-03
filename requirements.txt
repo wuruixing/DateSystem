@@ -1,0 +1,17 @@
+# 日期提醒系统依赖包
+
+# Web 框架
+Flask==3.0.0
+Flask-SQLAlchemy==3.1.1
+
+# 数据库
+PyMySQL==1.1.0
+
+# 定时任务
+APScheduler==3.10.4
+
+# HTTP 请求
+requests==2.31.0
+
+# 其他
+python-dotenv==1.0.0
