@@ -1,62 +1,23 @@
 """
-企业微信机器人通知模块
+企业微信 + 飞书 机器人通知模块
 """
 import json
 import requests
 from datetime import datetime
 
 
-# 倒计时颜色映射 - 使用企业微信支持的明亮颜色
-COUNTDOWN_COLORS = {
-    0: '#ff0000',    # 今天 - 红色
-    1: '#ff6600',    # 明天 - 橙红
-    2: '#ff6600',    # 2天 - 橙红
-    3: '#ff6600',    # 3天 - 橙红
-    7: '#0066ff',    # 7天 - 蓝色
-    15: '#9900cc',   # 15天 - 紫色
-    30: '#666666',   # 30天 - 灰色
-}
+# ============ 企业微信 ============
 
-
-def get_countdown_emoji(days):
-    """根据天数获取 emoji 和颜色"""
-    if days <= 0:
-        return '🔴', 'warning'
-    elif days <= 3:
-        return '🟠', 'warning'
-    elif days <= 7:
-        return '🟡', 'warning'
-    elif days <= 15:
-        return '🔵', 'info'
-    elif days <= 30:
-        return '🟢', 'comment'
-    else:
-        return '⚪', 'comment'
-
-
-def send_wechat_message(webhook_url, title, content, mention_list=None):
-    """
-    发送企业微信机器人消息
-
-    Args:
-        webhook_url: 企业微信机器人 Webhook 地址
-        title: 消息标题
-        content: 消息内容 (Markdown 格式)
-        mention_list: 需要@的人员列表 (手机号或userid)
-    """
+def send_wechat_message(webhook_url, content, mention_list=None):
     if not webhook_url:
-        return {'errcode': -1, 'errmsg': 'Webhook URL is not configured'}
+        return {'errcode': -1, 'errmsg': 'Webhook 未配置'}
 
     headers = {'Content-Type': 'application/json'}
-
     payload = {
         "msgtype": "markdown",
-        "markdown": {
-            "content": content
-        }
+        "markdown": {"content": content}
     }
 
-    # 添加@人功能
     if mention_list:
         mentioned_list = []
         mentioned_mobile_list = []
@@ -64,43 +25,26 @@ def send_wechat_message(webhook_url, title, content, mention_list=None):
             person = person.strip()
             if not person:
                 continue
-            # 如果是手机号（11位数字）
             if person.isdigit() and len(person) == 11:
                 mentioned_mobile_list.append(person)
             else:
                 mentioned_list.append(person)
-
         if mentioned_list or mentioned_mobile_list:
             payload["mentioned_list"] = mentioned_list
             payload["mentioned_mobile_list"] = mentioned_mobile_list
 
     try:
-        response = requests.post(
-            webhook_url,
-            headers=headers,
-            data=json.dumps(payload),
-            timeout=10
-        )
-        result = response.json()
-        return result
+        resp = requests.post(webhook_url, headers=headers, data=json.dumps(payload), timeout=10)
+        return resp.json()
     except Exception as e:
         return {'errcode': -1, 'errmsg': str(e)}
 
 
-def send_text_message(webhook_url, content, mention_list=None):
-    """
-    发送文本消息
-
-    Args:
-        webhook_url: 企业微信机器人 Webhook 地址
-        content: 消息内容
-        mention_list: 需要@的人员列表
-    """
+def send_wechat_text(webhook_url, content, mention_list=None):
     if not webhook_url:
-        return {'errcode': -1, 'errmsg': 'Webhook URL is not configured'}
+        return {'errcode': -1, 'errmsg': 'Webhook 未配置'}
 
     headers = {'Content-Type': 'application/json'}
-
     payload = {
         "msgtype": "text",
         "text": {
@@ -110,30 +54,95 @@ def send_text_message(webhook_url, content, mention_list=None):
     }
 
     try:
-        response = requests.post(
-            webhook_url,
-            headers=headers,
-            data=json.dumps(payload),
-            timeout=10
-        )
-        result = response.json()
-        return result
+        resp = requests.post(webhook_url, headers=headers, data=json.dumps(payload), timeout=10)
+        return resp.json()
     except Exception as e:
         return {'errcode': -1, 'errmsg': str(e)}
 
 
-def format_reminder_message(reminder, days_before, target_date):
-    """
-    格式化提醒消息 - 简洁样式
+# ============ 飞书 ============
 
-    Args:
-        reminder: 提醒对象
-        days_before: 提前天数
-        target_date: 目标日期
-    """
+def send_feishu_message(webhook_url, content, mention_list=None):
+    """飞书机器人发送富文本消息"""
+    if not webhook_url:
+        return {'code': -1, 'msg': 'Webhook 未配置'}
+
+    headers = {'Content-Type': 'application/json'}
+
+    # 飞书自定义机器人使用 interactive 消息类型
+    elements = []
+
+    # 解析 markdown 简单转换为飞书元素
+    # 飞书支持 markdown 格式的 content
+    payload = {
+        "msg_type": "interactive",
+        "card": {
+            "config": {"wide_screen_mode": True},
+            "header": {
+                "title": {"tag": "plain_text", "content": "日期提醒"},
+                "template": "blue"
+            },
+            "elements": [
+                {"tag": "markdown", "content": content}
+            ]
+        }
+    }
+
+    if mention_list:
+        at_list = []
+        for person in mention_list:
+            person = person.strip()
+            if person:
+                at_list.append({"tag": "at", "user_id": person})
+        if at_list:
+            payload["card"]["elements"].extend(at_list)
+
+    try:
+        resp = requests.post(webhook_url, headers=headers, data=json.dumps(payload), timeout=10)
+        return resp.json()
+    except Exception as e:
+        return {'code': -1, 'msg': str(e)}
+
+
+def send_feishu_text(webhook_url, content, mention_list=None):
+    """飞书发送纯文本消息"""
+    if not webhook_url:
+        return {'code': -1, 'msg': 'Webhook 未配置'}
+
+    headers = {'Content-Type': 'application/json'}
+    payload = {
+        "msg_type": "text",
+        "content": {"text": content}
+    }
+
+    try:
+        resp = requests.post(webhook_url, headers=headers, data=json.dumps(payload), timeout=10)
+        return resp.json()
+    except Exception as e:
+        return {'code': -1, 'msg': str(e)}
+
+
+# ============ 统一发送 ============
+
+def get_countdown_emoji(days):
+    if days <= 0:
+        return '🔴'
+    elif days <= 3:
+        return '🟠'
+    elif days <= 7:
+        return '🟡'
+    elif days <= 15:
+        return '🔵'
+    elif days <= 30:
+        return '🟢'
+    else:
+        return '⚪'
+
+
+def format_reminder_content(reminder, days_before, target_date):
     today = datetime.now().date()
     remaining_days = (target_date - today).days
-    emoji, _ = get_countdown_emoji(remaining_days)
+    emoji = get_countdown_emoji(remaining_days)
 
     if remaining_days < 0:
         time_desc = f'已过期{abs(remaining_days)}天'
@@ -159,24 +168,26 @@ def format_reminder_message(reminder, days_before, target_date):
     return content
 
 
-def send_reminder_notification(webhook_url, reminder, days_before, target_date):
+def send_notification(webhook_url, channel, reminder, days_before, target_date):
     """
-    发送提醒通知
+    统一发送通知
 
     Args:
-        webhook_url: 企业微信 Webhook 地址
+        webhook_url: webhook 地址
+        channel: wechat / feishu
         reminder: 提醒对象
         days_before: 提前天数
         target_date: 目标日期
-
-    Returns:
-        dict: 发送结果
     """
-    content = format_reminder_message(reminder, days_before, target_date)
+    content = format_reminder_content(reminder, days_before, target_date)
 
-    # 解析@人员列表
     mention_list = None
     if reminder.mention_list:
         mention_list = [m.strip() for m in reminder.mention_list.split(',') if m.strip()]
 
-    return send_wechat_message(webhook_url, reminder.title, content, mention_list)
+    if channel == 'feishu':
+        result = send_feishu_message(webhook_url, content, mention_list)
+        return result, 'feishu'
+    else:
+        result = send_wechat_message(webhook_url, content, mention_list)
+        return result, 'wechat'

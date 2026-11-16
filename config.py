@@ -7,34 +7,41 @@ import json
 CONFIG_FILE = os.path.join(os.path.dirname(__file__), 'config_data.json')
 
 
-def load_wechat_webhook():
-    """从文件加载 Webhook 配置"""
+def load_config():
+    """从文件加载全局配置"""
+    config = {
+        'wechat_webhook_url': '',
+        'feishu_webhook_url': ''
+    }
     if os.path.exists(CONFIG_FILE):
         try:
             with open(CONFIG_FILE, 'r') as f:
                 data = json.load(f)
-                return data.get('wechat_webhook_url', '')
+                config.update(data)
         except:
             pass
-    return os.getenv('WECHAT_WEBHOOK_URL', '')
+    # 环境变量优先
+    if os.getenv('WECHAT_WEBHOOK_URL'):
+        config['wechat_webhook_url'] = os.getenv('WECHAT_WEBHOOK_URL')
+    if os.getenv('FEISHU_WEBHOOK_URL'):
+        config['feishu_webhook_url'] = os.getenv('FEISHU_WEBHOOK_URL')
+    return config
 
 
-def save_wechat_webhook(url):
-    """保存 Webhook 配置到文件"""
-    data = {}
-    if os.path.exists(CONFIG_FILE):
-        try:
-            with open(CONFIG_FILE, 'r') as f:
-                data = json.load(f)
-        except:
-            pass
-    data['wechat_webhook_url'] = url
+def save_config(wechat_url, feishu_url):
+    """保存全局配置到文件"""
+    data = {
+        'wechat_webhook_url': wechat_url,
+        'feishu_webhook_url': feishu_url
+    }
     with open(CONFIG_FILE, 'w') as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 
+_config = load_config()
+
+
 class Config:
-    # MySQL 数据库配置
     MYSQL_HOST = os.getenv('MYSQL_HOST', 'localhost')
     MYSQL_PORT = int(os.getenv('MYSQL_PORT', 3306))
     MYSQL_USER = os.getenv('MYSQL_USER', 'root')
@@ -42,23 +49,15 @@ class Config:
     MYSQL_DATABASE = os.getenv('MYSQL_DATABASE', 'date_reminder')
     MYSQL_CHARSET = os.getenv('MYSQL_CHARSET', 'utf8mb4')
 
-    # SQLAlchemy 配置
     SQLALCHEMY_DATABASE_URI = (
         f"mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}?charset={MYSQL_CHARSET}"
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-    # 企业微信机器人 Webhook 地址（全局配置，优先从文件读取）
-    WECHAT_WEBHOOK_URL = load_wechat_webhook()
+    WECHAT_WEBHOOK_URL = _config['wechat_webhook_url']
+    FEISHU_WEBHOOK_URL = _config['feishu_webhook_url']
 
-    # 提醒时间（默认每小时检查一次）
     CHECK_INTERVAL_MINUTES = int(os.getenv('CHECK_INTERVAL_MINUTES', 60))
-
-    # 提前提醒天数选项
     REMINDER_DAYS_OPTIONS = [1, 3, 7, 15, 30]
-
-    # 默认提醒时间段
     DEFAULT_REMINDER_TIMES = ['09:00', '14:00', '18:00']
-
-    # 每页显示数量
     PAGE_SIZE = 20
